@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Service Test</title>
+</head>
+<body>
+
+    <h2>Notification Service Test</h2>
+    <hr>
+    <label>JWT Token</label><br>
+    <textarea
+        id="token"
+        rows="8"
+        cols="100"
+        placeholder="Paste Access Token here..."
+    ></textarea>
+
+    <br><br>
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn">Disconnect</button>
+    <button id="clearBtn">Clear Notifications</button>
+    <hr>
+    <p>
+        <strong>Status:</strong>
+        <span id="status">Disconnected</span>
+    </p>
+    <p>
+        <strong>Socket ID:</strong>
+        <span id="socketId">-</span>
+    </p>
+    <hr>
+    <h3>Notifications</h3>
+    <div id="notifications"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
