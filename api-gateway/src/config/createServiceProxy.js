@@ -29,7 +29,6 @@ const createServiceProxy = (target, basePath = "") => {
         console.log("req.user =", req.user);
 
         if (req.user) {
-            console.log("Setting headers");
             headers["x-user-id"] = req.user.id;
             headers["x-user-role"] = req.user.role;
         }
@@ -56,7 +55,6 @@ const createServiceProxy = (target, basePath = "") => {
         });
 
         proxyReq.on("error", (err) => {
-            console.error("Proxy request error:", err);
             if (!res.headersSent) {
                 res.writeHead(502, { "Content-Type": "application/json" });
             }

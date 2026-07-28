@@ -1,14 +1,9 @@
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
-const {sendNotification} = require("../utils/notificationService");
+const { logger } = require("@movie/common").logger;
+const { sendNotification } = require("@movie/common").utils;
 
 const charge = async (req, res) => {
     const { userId, amount, bookingId, description } = req.body;
-
-    if (!userId || !amount || Number(amount) <= 0) {
-        return res.status(400).json({
-            message: "Valid userId and amount are required.",
-        });
-    }
 
     let result;
 
@@ -49,32 +44,40 @@ const charge = async (req, res) => {
                     type: "payment",
                     amount,
                     description:
-                        description ||
-                        `Payment for booking #${bookingId}`,
+                        description || `Payment for booking #${bookingId}`,
                     balanceBefore,
                     balanceAfter,
                 },
                 { transaction }
             );
 
-            return {
-                payment,
-                balanceBefore,
-                balanceAfter,
-            };
+            return { payment, balanceBefore, balanceAfter };
         });
 
     } catch (error) {
-
         if (error.status === 400) {
+            logger.warn("Payment failed: insufficient balance", {
+                requestId: req.requestId,
+                bookingId,
+                amount,
+                shortfall: error.shortfall,
+            });
             return res.status(400).json({
                 message: error.message,
                 shortfall: error.shortfall,
             });
         }
-
         throw error;
     }
+
+    logger.info("Payment successful", {
+        requestId: req.requestId,
+        userId,
+        bookingId,
+        transactionId: result.payment.id,
+        amount,
+        balanceAfter: result.balanceAfter,
+    });
 
     sendNotification({
         recipientId: userId,
@@ -102,12 +105,6 @@ const refund = async (req, res) => {
 
     const { userId, amount, bookingId, description } = req.body;
 
-    if (!userId || !amount || Number(amount) <= 0) {
-        return res.status(400).json({
-            message: "Valid userId and amount are required.",
-        });
-    }
-
     const result = await sequelize.transaction(async (transaction) => {
 
         const [wallet] = await Wallet.findOrCreate({
@@ -134,20 +131,21 @@ const refund = async (req, res) => {
                 bookingId: bookingId || null,
                 type: "refund",
                 amount,
-                description:
-                    description ||
-                    `Refund for booking #${bookingId}`,
+                description: description || `Refund for booking #${bookingId}`,
                 balanceBefore,
                 balanceAfter,
-            },
-            { transaction }
+            }, { transaction }
         );
+        return { refund, balanceBefore, balanceAfter };
+    });
 
-        return {
-            refund,
-            balanceBefore,
-            balanceAfter,
-        };
+    logger.info("Refund successful", {
+        requestId: req.requestId,
+        userId,
+        bookingId,
+        transactionId: result.refund.id,
+        amount,
+        balanceAfter: result.balanceAfter,
     });
 
     sendNotification({

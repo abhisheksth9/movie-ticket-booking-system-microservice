@@ -5,8 +5,7 @@ const createHttpClient = (baseURL) => {
         baseURL,
         timeout: 5000,
         headers: {
-            "x-internal-api-key":
-                process.env.INTERNAL_API_KEY,
+            "x-internal-api-key": process.env.INTERNAL_API_KEY,
         },
     });
 };

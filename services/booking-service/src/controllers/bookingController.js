@@ -1,20 +1,24 @@
 const { Op } = require("sequelize");
-const {Booking,BookingSeat,sequelize,} = require("../../models");
+const { Booking, BookingSeat, sequelize,} = require("../../models");
 const catalogClient = require("../utils/catalogClient");
 const paymentClient = require("../utils/paymentClient");
-const { sendNotification } = require("../utils/notificationService");
+
+const { sendNotification } = require("@movie/common").utils;
+const { errorMessages } = require("@movie/common").constants;
+const { AppError } = require("@movie/common").errors;
+const { logger } = require("@movie/common").logger;
 
 const createBooking = async (req, res) => {
 
     const { showtimeId, seatIds } = req.body;
-    if (!showtimeId || !Array.isArray(seatIds) || seatIds.length === 0) {
-        return res.status(400).json({ message: "ShowtimeId and seatIds are required.",});
-    }
 
     const showtime = await catalogClient.getShowtime(showtimeId);
-
     if (!showtime) {
-        return res.status(404).json({ message: "Showtime not found"});
+        logger.warn("Booking failed: showtime not found", {
+            userId: req.user.id,
+            showtimeId,
+        });
+        throw new AppError(errorMessages.SHOWTIME.NOT_FOUND, 404);
     }
 
     const seats = await catalogClient.getTheaterSeats(showtime.theaterId);
@@ -24,7 +28,13 @@ const createBooking = async (req, res) => {
     );
 
     if (selectedSeats.length !== seatIds.length) {
-        return res.status(404).json({ message: "One or more seats not found." });
+        logger.warn("Booking failed: invalid seat selection", {
+            userId: req.user.id,
+            showtimeId,
+            seatIds,
+        });
+
+        throw new AppError(errorMessages.SEAT.NOT_FOUND, 400);
     }
 
     const alreadyBooked = await BookingSeat.findAll({
@@ -32,25 +42,25 @@ const createBooking = async (req, res) => {
                 model: Booking,
                 where: {
                     showtimeId,
-                    status: {
-                        [Op.ne]: "cancelled",
-                    },
+                    status: { [Op.ne]: "cancelled" },
                 },
                 attributes: [],
             },
         ],
         where: {
-            seatId: {
-                [Op.in]: seatIds,
-            },
+            seatId: { [Op.in]: seatIds },
         },
     });
 
     if (alreadyBooked.length > 0) {
-        return res.status(409).json({
-            message: "One or more seats are already booked.",
-            bookedSeatIds: alreadyBooked.map((seat) => seat.seatId),
+        logger.warn("Booking failed: seats already booked", {
+            userId: req.user.id,
+            showtimeId,
+            requestedSeats: seatIds,
+            bookedSeats: alreadyBooked.map(seat => seat.seatId),
         });
+
+        throw new AppError(errorMessages.SEAT.ALREADY_BOOKED, 409);
     }
 
     const totalPrice = Number(showtime.price) * seatIds.length;
@@ -69,17 +79,25 @@ const createBooking = async (req, res) => {
                 seatIds.map((seatId) => ({
                     bookingId: newBooking.id,
                     seatId,
-                })),
-                { transaction }
+                })), { transaction }
             );
-
             return newBooking;
-
+        });
+        logger.info("Booking created", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            showtimeId,
+            seatIds,
+            totalPrice,
+        });
+    } catch (err) {
+        logger.error("Booking transaction failed", {
+            userId: req.user.id,
+            showtimeId,
+            error: err.message,
         });
 
-    } catch (err) {
-        return res.status(409).json(
-            { message: "Seats have just been booked by another user." });
+        throw new AppError(errorMessages.SEAT.ALREADY_BOOKED, 409)
     }
 
     let payment;
@@ -92,18 +110,38 @@ const createBooking = async (req, res) => {
         });
 
     } catch (err) {
-        await booking.update({ status: "cancelled"});
+        logger.error("Payment failed", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            amount: totalPrice,
+            error: err.message,
+        });
 
-        return res.status(err.status || 502).json({ message: err.message });}
+        await booking.update({ status: "cancelled"});
+        return res.status(err.status || 502).json({ message: err.message });
+    }
 
     try {
-        await booking.update({ status: "confirmed",});
+        await booking.update({ status: "confirmed" });
+
+        logger.info("Booking confirmed", {
+            bookingId: booking.id,
+            userId: req.user.id,
+        }); 
     } catch (err) {
+        logger.error("Booking confirmation failed. Initiating refund.", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            error: err.message,
+        });
+
         await paymentClient.refundUser({
             userId: req.user.id,
             bookingId: booking.id,
             amount: totalPrice,
-            description: `Compensation refund for booking #${booking.id}`, });
+            description: `Compensation refund for booking #${booking.id}`
+        });
+
         throw err;
     }
 
@@ -153,6 +191,11 @@ const getAllBookings = async (req, res) => {
             },
         ],
     });
+    
+    logger.info("Retrieved all bookings", {
+        count: bookings.length,
+    });
+
     res.status(200).json(bookings);
 };
 
@@ -165,21 +208,42 @@ const getMyBookings = async (req, res) => {
             },
         ],
     });
+    
+    logger.info("Retrieved user bookings", {
+        userId: req.user.id,
+        count: bookings.length,
+    });
+
     res.status(200).json(bookings);
 };
 
 const cancelBooking = async (req, res) => {
     const booking = await Booking.findByPk(req.params.id);
     if (!booking) {
-        return res.status(404).json({ message: "Booking not found." });
+        logger.warn("Booking cancellation failed: booking not found", {
+            bookingId: req.params.id,
+            userId: req.user.id,
+        });
+
+        throw new AppError(errorMessages.BOOKING.NOT_FOUND, 404);
     }
 
     if (booking.userId !== req.user.id) {
-        return res.status(403).json({ message: "Unauthorized."});
+        logger.warn("Unauthorized booking cancellation attempt", {
+            bookingId: booking.id,
+            userId: req.user.id,
+        });
+
+        throw new AppError(errorMessages.USER.UNAUTHORIZED, 403);
     }
 
     if (booking.status === "cancelled") {
-        return res.status(400).json({ message: "Booking already cancelled." });
+        logger.warn("Booking already cancelled", {
+            bookingId: booking.id,
+            userId: req.user.id,
+        });
+
+        throw new AppError(errorMessages.BOOKING.ALREADY_CANCELLED, 400);
     }
 
     const refund = await paymentClient.refundUser({

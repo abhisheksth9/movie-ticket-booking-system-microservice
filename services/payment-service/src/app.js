@@ -4,7 +4,7 @@ const cors = require("cors");
 const paymentRoutes = require("./routes/paymentRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 
-const { notFound, errorHandler } = require("./middleware/errorHandler");
+const { notFound, errorHandler } = require("@movie/common").middleware;
 
 const app = express();
 

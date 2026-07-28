@@ -3,6 +3,8 @@ require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
 
+const { logger } = require("@movie/common").logger;
+
 const app = require("./src/app");
 const { initSocket } = require("./src/sockets");
 const connectMongo = require("./src/config/mongo");
@@ -25,10 +27,10 @@ const startServer = async () => {
         await connectMongo();
 
         server.listen(PORT, () => {
-            console.log(`Notification Service running on PORT ${PORT}`);
+            logger.info(`Notification Service running on PORT ${PORT}`);
         });
     } catch (err) {
-        console.error("Failed to start server:", err);
+        logger.error("Failed to start server:", err);
         process.exit(1);
     }
 };

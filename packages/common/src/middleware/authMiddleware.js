@@ -1,14 +1,12 @@
+const { errorMessages } = require("../constants");
+const { AppError } = require("../errors");
+
 exports.protect = (req, res, next) => {
     const userId = req.headers["x-user-id"];
     const role = req.headers["x-user-role"];
 
-    console.log(userId);
-    console.log(role);
-    
-    if (!userId) {
-        return res.status(401).json({
-            message: "Unauthorized",
-        });
+    if (!userId || !role) {
+        throw new AppError(errorMessages.USER.UNAUTHORIZED, 403);
     }
 
     req.user = {
@@ -20,9 +18,7 @@ exports.protect = (req, res, next) => {
 
 exports.adminOnly = (req, res, next) => {
     if (req.user.role !== "admin") {
-        return res.status(403).json({
-            message: "Admin access required",
-        });
+        throw new AppError(errorMessages.AUTH.ADMIN_ONLY, 403)
     }
 
     next();

@@ -5,7 +5,7 @@ const movieRoutes = require("./routes/movieRoutes");
 const showtimeRoutes = require("./routes/showtimeRoutes");
 const theaterRoutes = require("./routes/theaterRoutes");
 
-const { notFound, errorHandler } = require("./middleware/errorHandler");
+const { notFound, errorHandler } = require("@movie/common").middleware;
 
 const app = express();
 

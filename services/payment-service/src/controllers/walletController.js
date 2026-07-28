@@ -1,51 +1,31 @@
+const { Op } = require("sequelize");
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
-
 const authClient = require("../utils/authClient");
-const { sendNotification } = require("../utils/notificationService");
+
+const { logger } = require("@movie/common").logger;
+const { AppError } = require("@movie/common").errors;
+const { errorMessages } = require("@movie/common").constants;
+const { sendNotification } = require("@movie/common").utils;
 
 const topUpWallet = async (req, res) => {
-
     const { targetUserId, amount } = req.body;
 
-    if (!targetUserId || !amount || Number(amount) <= 0) {
-        return res.status(400).json({
-            message: "Valid targetUserId and amount are required.",
-        });
-    }
-
-    const user = await authClient.getUser(targetUserId, req.user);
-    if (!user) {
-        return res.status(404).json({
-            message: "User not found.",
-        });
-    }
+    const user = await authClient.getUser(targetUserId, req.user);    
+    if (!user) throw new AppError(errorMessages.USER.NOT_FOUND, 404)
 
     const result = await sequelize.transaction(async (transaction) => {
         const [wallet] = await Wallet.findOrCreate({
-            where: {
-                userId: targetUserId,
-            },
-            defaults: {
-                balance: 0,
-            },
+            where: { userId: targetUserId },
+            defaults: { balance: 0 },
             transaction,
             lock: transaction.LOCK.UPDATE,
         });
 
         const balanceBefore = Number(wallet.balance);
 
-        const balanceAfter = Number(
-            (balanceBefore + Number(amount)).toFixed(2)
-        );
+        const balanceAfter = Number( (balanceBefore + Number(amount)).toFixed(2) );
 
-        await wallet.update(
-            {
-                balance: balanceAfter,
-            },
-            {
-                transaction,
-            }
-        );
+        await wallet.update({ balance: balanceAfter },{ transaction });
 
         const transactionRecord = await WalletTransaction.create(
             {
@@ -58,7 +38,15 @@ const topUpWallet = async (req, res) => {
             },
             { transaction }
         );
-        return { transactionRecord,};
+        return { transactionRecord };
+    });
+
+    logger.info("Wallet topped up", {
+        requestId: req.requestId,
+        adminId: req.user.id,
+        targetUserId,
+        amount,
+        balanceAfter: result.transactionRecord.balanceAfter,
     });
 
     try {
@@ -105,9 +93,7 @@ const topUpWallet = async (req, res) => {
 };
 
 const getBalance = async (req, res) => {
-    const wallet = await Wallet.findOne({
-        where: { userId: req.user.id },
-    });
+    const wallet = await Wallet.findOne({ where: { userId: req.user.id } });
 
     res.status(200).json({
         userId: req.user.id,
@@ -117,20 +103,9 @@ const getBalance = async (req, res) => {
 
 const getTransactionHistory = async (req, res) => {
     const transactions = await WalletTransaction.findAll({
-        where: {
-            userId: req.user.id,
-        },
+        where: { userId: req.user.id },
         order: [["createdAt", "DESC"]],
-        attributes: [
-            "id",
-            "type",
-            "amount",
-            "description",
-            "balanceBefore",
-            "balanceAfter",
-            "bookingId",
-            "createdAt",
-        ],
+        attributes: [ "id", "type", "amount", "description", "balanceBefore", "balanceAfter", "bookingId", "createdAt" ],
     });
     res.status(200).json(transactions);
 };

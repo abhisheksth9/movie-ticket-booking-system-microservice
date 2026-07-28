@@ -2,22 +2,23 @@ require("dotenv").config();
 
 const app = require("./src/app");
 const sequelize = require("./config/sequelize");
+const { logger } = require("@movie/common").logger;
 
 const PORT = process.env.PORT || 4003;
 
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        console.log("Database Connected.");
+        logger.info("Database Connected.");
 
         await sequelize.sync();
 
         app.listen(PORT, () => {
-            console.log(`Catalog Service running on port ${PORT}`);
+            logger.info(`Catalog Service running on port ${PORT}`);
         });
 
     } catch (err) {
-        console.error("Unable to start server:", err);
+        logger.error("Unable to start server:", err);
         process.exit(1);
     }
 };

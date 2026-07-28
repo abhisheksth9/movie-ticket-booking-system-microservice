@@ -5,11 +5,12 @@ const notificationAPI = axios.create({
     timeout: 5000,
 });
 
-const sendNotification = async (payload) => {
+const sendNotification = async (payload, requestId) => {
     try {
         await notificationAPI.post("/api/notifications", payload, {
             headers: {
                 "x-internal-api-key": process.env.INTERNAL_API_KEY,
+                "x-request-id": requestId,        
             },
         });
     } catch (err) {

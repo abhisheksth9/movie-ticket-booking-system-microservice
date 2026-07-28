@@ -3,19 +3,21 @@ const router = express.Router();
 
 const { getAllMovies, getMovieById, createMovie, updateMovie, deleteMovie } = require("../controllers/movieController");
 
-const { protect, adminOnly } = require("../middleware/authMiddleware");
-const internalApi = require("../middleware/internalApiMiddleware");
+const { protect, adminOnly, internalApiMiddleware } = require("@movie/common").middleware;
+const { validate } = require("@movie/common").validators;
+const {
+  createMovieSchema,
+  updateMovieSchema,
+  movieIdParamSchema,
+  listMoviesQuerySchema,
+} = require("@movie/common").validators;
 
-// Public
-router.get("/", getAllMovies);
-router.get("/:id", getMovieById);
+router.get("/", validate({ query: listMoviesQuerySchema }), getAllMovies);
+router.get("/:id", validate({ params: movieIdParamSchema }), getMovieById);
+router.post("/create", validate({ body: createMovieSchema }), protect, adminOnly, createMovie);
+router.put("/update/:id", validate({ body: updateMovieSchema }), protect, adminOnly, updateMovie);
+router.delete("/del/:id", validate({ params: movieIdParamSchema }), protect, adminOnly, deleteMovie);
 
-// Admin
-router.post("/create", protect, adminOnly, createMovie);
-router.put("/update/:id", protect, adminOnly, updateMovie);
-router.delete("/del/:id", protect, adminOnly, deleteMovie);
-
-// Internal
-router.get("/internal/:id", internalApi, getMovieById);
+router.get("/internal/:id", internalApiMiddleware , getMovieById);
 
 module.exports = router;

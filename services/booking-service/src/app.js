@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const bookingRoutes = require("./routes/bookingRoutes");
-const { notFound, errorHandler } = require("./middleware/errorHandler");
+const { notFound, errorHandler } = require("@movie/common").middleware;
 
 const app = express();
 

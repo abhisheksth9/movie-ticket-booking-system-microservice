@@ -1,0 +1,27 @@
+{
+  "name": "movie-ticket-booking-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "api-gateway/",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhisheksth9/movie-ticket-booking-system-microservice.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/abhisheksth9/movie-ticket-booking-system-microservice/issues"
+  },
+  "homepage": "https://github.com/abhisheksth9/movie-ticket-booking-system-microservice#readme"
+}

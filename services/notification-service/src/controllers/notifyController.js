@@ -1,3 +1,6 @@
+const { AppError } = require("@movie/common").errors;
+const { errorMessages } = require("@movie/common").constants;
+
 const Notification = require("../models/Notification");
 const { getIO } = require("../sockets");
 
@@ -11,9 +14,7 @@ const sendNotification = async (req, res) => {
     } = req.body;
 
     if (!type || !message) {
-        return res.status(400).json({
-            message: "Type and message are required.",
-        });
+        throw new AppError(errorMessages.GENERAL.MISSING_FIELDS, 400);
     }
 
     try {
@@ -46,10 +47,7 @@ const sendNotification = async (req, res) => {
 
     } catch (err) {
         console.error(err);
-
-        return res.status(500).json({
-            message: "Failed to send notification.",
-        });
+        throw new AppError(errorMessages.NOTIFICATION.NOTIFICATION_FAIL, 500)
     }
 };
 

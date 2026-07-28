@@ -1,24 +1,31 @@
 const express = require("express");
 const router = express.Router();
-const { protect, adminOnly } = require("../middleware/authMiddleware");
-const internalApi = require("../middleware/internalApiMiddleware");
 
-const { registerUser, loginUser, registerAdmin, loginAdmin, refreshToken, getUser, getAllUsers, deleteUser, } = require("../controllers/authController");
+const { protect, adminOnly, internalApiMiddleware } = require("@movie/common").middleware;
+const { registerUser, loginUser, 
+        registerAdmin, loginAdmin, refreshToken, 
+        getUser, getAllUsers, deleteUser, 
+} = require("../controllers/authController");
 
-// Public
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/refresh", refreshToken);
+const { validate } = require("@movie/common").validators;
+const {
+    registerSchema,
+    loginSchema,
+    listUserQuerySchema,
+    userIdParamSchema,
+    refreshTokenSchema,
+} = require("@movie/common").validators;
 
-// Admin Authentication
-router.post("/admin/register", registerAdmin);
-router.post("/admin/login", loginAdmin);
+router.post("/register", validate({body: registerSchema}),registerUser);
+router.post("/login",validate({body: loginSchema}), loginUser);
+router.post("/refresh", validate({body: refreshTokenSchema}), refreshToken);
 
-//  Protected Routes (Accessed through API Gateway)
-router.get("/users", protect, adminOnly, getAllUsers);
-router.delete("/del/:id", protect, adminOnly, deleteUser);
+router.post("/admin/register",validate({body: registerSchema}), registerAdmin);
+router.post("/admin/login", validate({body: loginSchema}), loginAdmin);
 
-// Internal Service Routes
-router.get("/internal/users/:id", internalApi, getUser)
+router.get("/users", validate({ query: listUserQuerySchema }), protect, adminOnly, getAllUsers);
+router.delete("/del/:id", validate({ params: userIdParamSchema }), protect, adminOnly, deleteUser);
+
+router.get("/internal/users/:id", internalApiMiddleware, getUser)
 
 module.exports = router;
