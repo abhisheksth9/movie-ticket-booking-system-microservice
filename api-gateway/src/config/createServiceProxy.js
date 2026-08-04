@@ -26,8 +26,6 @@ const createServiceProxy = (target, basePath = "") => {
         headers["x-forwarded-port"] = req.socket.localPort;
         headers["x-forwarded-proto"] = req.socket.encrypted ? "https" : "http";
 
-        console.log("req.user =", req.user);
-
         if (req.user) {
             headers["x-user-id"] = req.user.id;
             headers["x-user-role"] = req.user.role;

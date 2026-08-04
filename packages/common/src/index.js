@@ -3,5 +3,6 @@ module.exports = {
     errors: require("./errors"),
     middleware: require("./middleware"),
     logger: require("./logger"),
-    validators: require("./validators")
+    validators: require("./validators"),
+    utils: require("./utils")
 };
