@@ -1,0 +1,26 @@
+syntax = "proto3";
+package payment;
+
+service PaymentService {
+    rpc ChargeUser (ChargeUserRequest) returns (PaymentResponse);
+    rpc RefundUser (RefundUserRequest) returns (PaymentResponse);
+}
+message ChargeUserRequest {
+    int32 userId = 1;
+    int32 bookingId = 2;
+    double amount = 3;
+    string description = 4;
+}
+message RefundUserRequest {
+    int32 userId = 1;
+    int32 bookingId = 2;
+    double amount = 3;
+    string description = 4;
+}
+message PaymentResponse {
+    bool success = 1;
+    int32 transactionId = 2;
+    double amount = 3;
+    double balanceAfter = 4;
+    string message = 5;
+}

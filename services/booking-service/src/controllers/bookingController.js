@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const { Booking, BookingSeat, sequelize,} = require("../../models");
-const catalogClient = require("../utils/catalogClient");
-const paymentClient = require("../utils/paymentClient");
+const catalogClient = require("../grpc/cataloggrpcClient")
+const paymentClient = require("../grpc/paymentgrpcClient")
 
 const { sendNotification } = require("@movie/common").utils;
 const { errorMessages } = require("@movie/common").constants;
@@ -9,7 +9,6 @@ const { AppError } = require("@movie/common").errors;
 const { logger } = require("@movie/common").logger;
 
 const createBooking = async (req, res) => {
-
     const { showtimeId, seatIds } = req.body;
 
     const showtime = await catalogClient.getShowtime(showtimeId);
@@ -22,7 +21,7 @@ const createBooking = async (req, res) => {
     }
 
     const seats = await catalogClient.getTheaterSeats(showtime.theaterId);
-
+    console.log("theater from gRPC:", JSON.stringify(showtime.theaterId));
     const selectedSeats = seats.filter((seat) =>
         seatIds.includes(seat.id)
     );
@@ -33,7 +32,6 @@ const createBooking = async (req, res) => {
             showtimeId,
             seatIds,
         });
-
         throw new AppError(errorMessages.SEAT.NOT_FOUND, 400);
     }
 
@@ -59,7 +57,6 @@ const createBooking = async (req, res) => {
             requestedSeats: seatIds,
             bookedSeats: alreadyBooked.map(seat => seat.seatId),
         });
-
         throw new AppError(errorMessages.SEAT.ALREADY_BOOKED, 409);
     }
 
@@ -96,7 +93,6 @@ const createBooking = async (req, res) => {
             showtimeId,
             error: err.message,
         });
-
         throw new AppError(errorMessages.SEAT.ALREADY_BOOKED, 409)
     }
 
@@ -108,7 +104,6 @@ const createBooking = async (req, res) => {
             amount: totalPrice,
             description: `Payment for booking #${booking.id}`,
         });
-
     } catch (err) {
         logger.error("Payment failed", {
             bookingId: booking.id,
@@ -116,14 +111,12 @@ const createBooking = async (req, res) => {
             amount: totalPrice,
             error: err.message,
         });
-
         await booking.update({ status: "cancelled"});
         return res.status(err.status || 502).json({ message: err.message });
     }
 
     try {
         await booking.update({ status: "confirmed" });
-
         logger.info("Booking confirmed", {
             bookingId: booking.id,
             userId: req.user.id,
@@ -134,14 +127,12 @@ const createBooking = async (req, res) => {
             userId: req.user.id,
             error: err.message,
         });
-
         await paymentClient.refundUser({
             userId: req.user.id,
             bookingId: booking.id,
             amount: totalPrice,
             description: `Compensation refund for booking #${booking.id}`
         });
-
         throw err;
     }
 
@@ -180,7 +171,6 @@ const createBooking = async (req, res) => {
         amountDeducted: totalPrice,
         remainingBalance: payment.balanceAfter,
     });
-
 };
 
 const getAllBookings = async (req, res) => {

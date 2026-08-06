@@ -13,6 +13,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@movie/common": "file: ../../packages/common",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",

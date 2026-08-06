@@ -4,5 +4,6 @@ module.exports = {
     middleware: require("./middleware"),
     logger: require("./logger"),
     validators: require("./validators"),
-    utils: require("./utils")
+    utils: require("./utils"),
+    proto: require("./proto"),
 };

@@ -78,6 +78,7 @@ module.exports = {
     MISSING_FIELDS: "Please provide all required fields.",
     INTERNAL_SERVER_ERROR: "Internal Server Error.",
     INVALID_JSON: "Malformed JSON request body.",
-    FOREIGN_KEY_CONSTRAINT: "Operation violates database relationship."
+    FOREIGN_KEY_CONSTRAINT: "Operation violates database relationship.",
+    INVALID_REQUEST: "Invalid Request."
   },
 };

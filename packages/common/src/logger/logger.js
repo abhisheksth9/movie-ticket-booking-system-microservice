@@ -8,11 +8,7 @@ const logger = createLogger({
             format: "YYYY-MM-DD HH:mm:ss",
         }),
 
-        format.errors({
-            stack: true,
-        }),
-
-        format.printf(({ timestamp, level, message, stack, ...meta }) => {
+        format.printf(({ timestamp, level, message, ...meta }) => {
 
             const service = process.env.SERVICE_NAME || "unknown-service";
 
@@ -21,11 +17,6 @@ const logger = createLogger({
             if (Object.keys(meta).length) {
                 log += `\n${JSON.stringify(meta, null, 2)}`;
             }
-
-            if (stack) {
-                log += `\n${stack}`;
-            }
-
             return log;
         })
     ),

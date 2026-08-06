@@ -50,7 +50,6 @@ const errorHandler = (err, req, res, next) => {
         method: req.method,
         url: req.originalUrl,
         statusCode,
-        stack: err.stack
     })
 
     res.status(statusCode).json({

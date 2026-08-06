@@ -4,6 +4,8 @@ const app = require("./src/app");
 const sequelize = require("./config/sequelize");
 const { logger } = require("@movie/common").logger;
 
+const { startGrpcServer } = require("./src/grpc/server");
+
 const PORT = process.env.PORT || 4003;
 
 const startServer = async () => {
@@ -17,6 +19,7 @@ const startServer = async () => {
             logger.info(`Catalog Service running on port ${PORT}`);
         });
 
+        startGrpcServer();
     } catch (err) {
         logger.error("Unable to start server:", err);
         process.exit(1);
