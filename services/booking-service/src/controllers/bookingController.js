@@ -3,13 +3,15 @@ const { Booking, BookingSeat, sequelize,} = require("../../models");
 const catalogClient = require("../grpc/cataloggrpcClient")
 const paymentClient = require("../grpc/paymentgrpcClient")
 
-const { sendNotification } = require("@movie/common").utils;
 const { errorMessages } = require("@movie/common").constants;
 const { AppError } = require("@movie/common").errors;
 const { logger } = require("@movie/common").logger;
 
+const { publishBookingEvent } = require("../kafka/producer");
+
 const createBooking = async (req, res) => {
     const { showtimeId, seatIds } = req.body;
+    const userId = req.user.id
 
     const showtime = await catalogClient.getShowtime(showtimeId);
     if (!showtime) {
@@ -21,7 +23,6 @@ const createBooking = async (req, res) => {
     }
 
     const seats = await catalogClient.getTheaterSeats(showtime.theaterId);
-    console.log("theater from gRPC:", JSON.stringify(showtime.theaterId));
     const selectedSeats = seats.filter((seat) =>
         seatIds.includes(seat.id)
     );
@@ -135,28 +136,14 @@ const createBooking = async (req, res) => {
         });
         throw err;
     }
-
-    await sendNotification({
-        recipientId: req.user.id,
-        recipientRole: "user",
-        type: "BOOKING_CONFIRMED",
-        message: `Booking #${booking.id} confirmed.`,
-        data: {
-            bookingId: booking.id,
-            seats: seatIds,
-            totalPrice,
-        },
-    });
-
-    await sendNotification({
-        recipientRole: "admin",
-        type: "NEW_BOOKING",
-        message: `New booking created.`,
-        data: {
-            bookingId: booking.id,
-            userId: req.user.id,
-        },
-    });
+    
+    await publishBookingEvent('booking.confirmed', {
+        bookingId: booking.id,
+        userId: booking.userId,
+        showtimeId,
+        seats: seatIds,
+        totalPrice,
+    })
 
     res.status(201).json({
         message: "Booking created successfully.",
@@ -236,21 +223,64 @@ const cancelBooking = async (req, res) => {
         throw new AppError(errorMessages.BOOKING.ALREADY_CANCELLED, 400);
     }
 
-    const refund = await paymentClient.refundUser({
-        userId: req.user.id,
+    logger.info("Starting booking cancellation", {
         bookingId: booking.id,
+        userId: req.user.id,
         amount: booking.totalPrice,
-        description: `Refund for booking #${booking.id}`,
+        status: booking.status,
     });
 
-    await booking.update({ status: "cancelled" });
 
-    await sendNotification({
-        recipientId: req.user.id,
-        recipientRole: "user",
-        type: "BOOKING_CANCELLED",
-        message: `Booking cancelled successfully.`,
-        data: { bookingId: booking.id },
+    let refund;
+
+    try{
+        refund = await paymentClient.refundUser({
+            userId: req.user.id,
+            bookingId: booking.id,
+            amount: booking.totalPrice,
+            description: `Refund for booking #${booking.id}`,
+        });
+
+        logger.info("Refund successful", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            refundedAmount: booking.totalPrice,
+            remainingBalance: refund.balanceAfter,
+        });
+    } catch(err) {
+        logger.error("Refund failed", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            amount: booking.totalPrice,
+            error: err.message,
+        })
+
+        throw err;
+    }
+    
+    try {
+        await booking.update({ status: "cancelled" });
+
+        logger.info("Booking cancelled successfully", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            refundedAmount: booking.totalPrice,
+        });
+    } catch (err) {
+        logger.error("Booking status update failed after refund", {
+            bookingId: booking.id,
+            userId: req.user.id,
+            refundedAmount: booking.totalPrice,
+            error: err.message,
+        });
+
+        throw err;
+    }
+
+    await publishBookingEvent('booking.cancelled', {
+        bookingId: booking.id,
+        userId: booking.userId,
+        refundedAmount: booking.totalPrice,
     });
 
     res.status(200).json({
@@ -258,7 +288,5 @@ const cancelBooking = async (req, res) => {
         refundedAmount: booking.totalPrice,
         remainingBalance: refund.balanceAfter,
     });
-
 };
-
 module.exports = { createBooking, getAllBookings, getMyBookings,cancelBooking };

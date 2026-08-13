@@ -1,15 +1,13 @@
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
 const { logger } = require("@movie/common").logger;
-const { sendNotification } = require("@movie/common").utils;
+const { publishPaymentEvent } = require("../kafka/producer");
 
 const charge = async (req, res) => {
     const { userId, amount, bookingId, description } = req.body;
-
     let result;
 
     try {
         result = await sequelize.transaction(async (transaction) => {
-
             const [wallet] = await Wallet.findOrCreate({
                 where: { userId },
                 defaults: { balance: 0 },
@@ -28,32 +26,22 @@ const charge = async (req, res) => {
                 throw error;
             }
 
-            const balanceAfter = Number(
-                (balanceBefore - Number(amount)).toFixed(2)
-            );
+            const balanceAfter = Number((balanceBefore - Number(amount)).toFixed(2));
 
-            await wallet.update(
-                { balance: balanceAfter },
-                { transaction }
-            );
+            await wallet.update( { balance: balanceAfter }, { transaction });
 
-            const payment = await WalletTransaction.create(
-                {
+            const payment = await WalletTransaction.create({
                     userId,
                     bookingId: bookingId || null,
                     type: "payment",
                     amount,
-                    description:
-                        description || `Payment for booking #${bookingId}`,
+                    description: description || `Payment for booking #${bookingId}`,
                     balanceBefore,
                     balanceAfter,
-                },
-                { transaction }
+                }, { transaction }
             );
-
             return { payment, balanceBefore, balanceAfter };
         });
-
     } catch (error) {
         if (error.status === 400) {
             logger.warn("Payment failed: insufficient balance", {
@@ -79,19 +67,11 @@ const charge = async (req, res) => {
         balanceAfter: result.balanceAfter,
     });
 
-    sendNotification({
-        recipientId: userId,
-        recipientRole: "user",
-        type: "PAYMENT_SUCCESS",
-        message: `Payment of Rs. ${amount} completed successfully.`,
-        data: {
-            bookingId,
-            amount,
-            balanceBefore: result.balanceBefore,
-            balanceAfter: result.balanceAfter,
-        },
-    }).catch((err) => {
-        console.error("Notification Service:", err.message);
+    await publishPaymentEvent('payment.charged', { 
+        userId, 
+        bookingId, 
+        amount, 
+        balanceAfter: result.balanceAfter 
     });
 
     res.status(200).json({
@@ -102,11 +82,9 @@ const charge = async (req, res) => {
 };
 
 const refund = async (req, res) => {
-
     const { userId, amount, bookingId, description } = req.body;
 
     const result = await sequelize.transaction(async (transaction) => {
-
         const [wallet] = await Wallet.findOrCreate({
             where: { userId },
             defaults: { balance: 0 },
@@ -116,17 +94,11 @@ const refund = async (req, res) => {
 
         const balanceBefore = Number(wallet.balance);
 
-        const balanceAfter = Number(
-            (balanceBefore + Number(amount)).toFixed(2)
-        );
+        const balanceAfter = Number((balanceBefore + Number(amount)).toFixed(2));
 
-        await wallet.update(
-            { balance: balanceAfter },
-            { transaction }
-        );
+        await wallet.update( { balance: balanceAfter }, { transaction });
 
-        const refund = await WalletTransaction.create(
-            {
+        const refund = await WalletTransaction.create({
                 userId,
                 bookingId: bookingId || null,
                 type: "refund",
@@ -148,19 +120,11 @@ const refund = async (req, res) => {
         balanceAfter: result.balanceAfter,
     });
 
-    sendNotification({
-        recipientId: userId,
-        recipientRole: "user",
-        type: "PAYMENT_REFUND",
-        message: `Refund of Rs. ${amount} has been credited to your wallet.`,
-        data: {
-            bookingId,
-            amount,
-            balanceBefore: result.balanceBefore,
-            balanceAfter: result.balanceAfter,
-        },
-    }).catch((err) => {
-        console.error("Notification Service:", err.message);
+    await publishPaymentEvent('payment.refunded', { 
+        userId, 
+        bookingId, 
+        amount, 
+        balanceAfter: result.balanceAfter
     });
 
     res.status(200).json({

@@ -7,10 +7,10 @@ const { logger } = require("@movie/common").logger;
 const { proto } = require("@movie/common");
 
 const paymentProto = proto.loadProto("payment.proto", "payment");
+const { publishPaymentEvent } = require("../kafka/producer");
 
 async function chargeUser(call, callback) {
     const { userId, bookingId, amount, description } = call.request;
-
     const transaction = await sequelize.transaction();
 
     try {
@@ -22,7 +22,6 @@ async function chargeUser(call, callback) {
 
         if (!wallet){
             await transaction.rollback();
-
             return callback(null, {
                 success: false,
                 transactionId: 0,
@@ -31,6 +30,7 @@ async function chargeUser(call, callback) {
                 message: "Wallet Not Found",
             });
         }
+
         const balanceBefore = Number(wallet.balance);
         wallet.balance = balanceBefore - amount;
         await wallet.save({ transaction });
@@ -47,6 +47,22 @@ async function chargeUser(call, callback) {
         }, {transaction});
 
         await transaction.commit();
+
+        logger.info("Payment Successful", {
+            userId, 
+            bookingId, 
+            transactionId: walletTransaction.id,
+            amount, 
+            balanceAfter: wallet.balance
+        });
+        
+        try{
+            await publishPaymentEvent('payment.charged', {
+                userId, bookingId, amount, balanceAfter: wallet.balance,
+            });
+        } catch (err){
+            logger.error(`[Payment Service] Failed to publish payment.charged event: ${err.message}`)
+        }
 
         callback(null, {
             success: true,
@@ -67,7 +83,6 @@ async function chargeUser(call, callback) {
 
 async function refundUser(call, callback) {
     const { userId, bookingId, amount, description } = call.request;
-     
     const transaction = await sequelize.transaction();
     
     try{
@@ -79,7 +94,6 @@ async function refundUser(call, callback) {
 
         if (!wallet) {
             await transaction.rollback();
-
             return callback(null, {
                 success: false,
                 transactionId: 0,
@@ -88,6 +102,7 @@ async function refundUser(call, callback) {
                 message: "Wallet Not Found"
             });
         }
+
         const balanceBefore = Number(wallet.balance);
         wallet.balance = balanceBefore + amount;
         await wallet.save({ transaction });
@@ -105,6 +120,22 @@ async function refundUser(call, callback) {
 
         await transaction.commit();
 
+        logger.info("Refund Successful", {
+            userId, 
+            bookingId, 
+            transactionId: walletTransaction.id,
+            amount,
+            balanceAfter: wallet.balance,
+        });
+
+        try {
+            await publishPaymentEvent('payment.refunded', {
+                userId, bookingId, amount, balanceAfter: wallet.balance,
+            });
+        } catch (err) {
+            logger.error(`[Payment Service] Failed to publish payment.refunded event: ${err.message}`);
+        }
+        
         callback(null, {
             success: true,
             transactionId: walletTransaction.id,

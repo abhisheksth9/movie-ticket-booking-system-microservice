@@ -6,4 +6,5 @@ module.exports = {
     validators: require("./validators"),
     utils: require("./utils"),
     proto: require("./proto"),
+    kafka: require("./kafka"),
 };
