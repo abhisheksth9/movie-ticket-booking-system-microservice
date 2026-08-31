@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { User } = require("../../models");
 const { generateTokens, generateAccessToken } = require("../utils/generateToken");
+const { logAudit } = require('../services/auditService');
 
 const { sendNotification } = require("@movie/common").utils;
 const { AppError } = require("@movie/common").errors;
@@ -55,6 +56,7 @@ const login = async (req, role) => {
     }
 
     logger.info("User logged in", { userId: user.id, email, role })
+    await logAudit(user.id, 'LOGIN');
     const tokens = generateTokens(user);
     return { user, tokens };
 };

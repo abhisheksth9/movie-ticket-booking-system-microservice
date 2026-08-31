@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const paymentRoutes = require("./routes/paymentRoutes");
 const walletRoutes = require("./routes/walletRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const { notFound, errorHandler } = require("@movie/common").middleware;
 
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use("/api/payments", paymentRoutes);
 app.use("/api/payments", walletRoutes);
+app.use('/internal/reports', reportRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

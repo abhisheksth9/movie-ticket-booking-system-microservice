@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 const { notFound, errorHandler } = require("@movie/common").middleware;
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(cors({
 }));
 
 app.use("/api/auth", authRoutes);
+app.use('/internal/reports', reportRoutes)
 
 app.get("/health", (req, res) => {
     res.status(200).json({

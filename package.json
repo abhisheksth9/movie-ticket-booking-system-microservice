@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/abhisheksth9/movie-ticket-booking-system-microservice/issues"
   },
-  "homepage": "https://github.com/abhisheksth9/movie-ticket-booking-system-microservice#readme"
+  "homepage": "https://github.com/abhisheksth9/movie-ticket-booking-system-microservice#readme",
+  "dependencies": {
+    "node-cron": "^4.6.0"
+  }
 }
