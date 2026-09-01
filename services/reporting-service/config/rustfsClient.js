@@ -10,4 +10,4 @@ const rustfsClient = new S3Client({
     forcePathStyle: true
 });
 
-module.exports = rustfsClient;
+module.exports = {rustfsClient};

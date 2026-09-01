@@ -5,7 +5,7 @@ const getTypeSummary = async (type, dateRange ) => {
     const result = await WalletTransaction.findOne({
         attributes: [
             [fn('COUNT', col('id')), 'count'],
-            [fn('SUM', col('id')), 'count']
+            [fn('SUM', col('id')), 'total']
         ],
         where: { type, createdAt: dateRange},
         raw: true

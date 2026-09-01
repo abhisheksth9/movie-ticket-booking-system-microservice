@@ -7,7 +7,7 @@ const { generateDailyReport } = require('../services/reportGenerator');
 const getReportByDate = async (req, res, next) => {
     try{
         const { date } = req.params;
-        const { report } = await DailyReport.findOne({ where: { date }});
+        const report = await DailyReport.findOne({ where: { date }});
 
         if (!report) {
             return res.status(404).json({ message: `No report found for ${date}`});
