@@ -1,6 +1,6 @@
 const { DailyReport } = require('../../models');
 const { GetObjectCommand } = require('@aws-sdk/client-s3');
-const { rustfsClient } = require('../../config/rustfsClient');
+const rustfsClient  = require('../../config/rustfsClient');
 const { Op } = require('sequelize');
 const { generateDailyReport } = require('../services/reportGenerator');
 
@@ -46,7 +46,7 @@ const downloadReportPdf = async (req, res, next ) => {
         const report = await DailyReport.findOne({ where: { date }});
 
         if (!report || !report.reportFileKey ) {
-            return res.status(404).json({ message: 'No PFD export found for ${date}'});
+            return res.status(404).json({ message: 'No PDF export found for ${date}'});
         }
 
         const { Body } = await rustfsClient.send(new GetObjectCommand({

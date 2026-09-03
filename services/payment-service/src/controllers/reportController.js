@@ -5,7 +5,7 @@ const getTypeSummary = async (type, dateRange ) => {
     const result = await WalletTransaction.findOne({
         attributes: [
             [fn('COUNT', col('id')), 'count'],
-            [fn('SUM', col('id')), 'total']
+            [fn('SUM', col('amount')), 'total']
         ],
         where: { type, createdAt: dateRange},
         raw: true
@@ -20,7 +20,7 @@ const getTypeSummary = async (type, dateRange ) => {
 const getDailyStats = async (req, res, next) => {
     try{
         const { date } = req.query;
-
+        
         if (!date) {
             return res.status(400).json({ message: 'date query param is required'});
         }

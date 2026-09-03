@@ -7,7 +7,7 @@ const getYesterdayDateString = () => {
     return d.toISOString().split('T')[0];
 };
 
-    cron.schedule('15 03 * * *', async() => {  // 9: 00 AM in Nepal Time
+    cron.schedule('15 04 * * *', async() => {
     const date = getYesterdayDateString();
     try {
         await generateDailyReport(date);
