@@ -1,6 +1,4 @@
-const grpc = require("@grpc/grpc-js");
-const { proto } = require("@movie/common");
-
+const { proto, grpc } = require("@movie/common");
 const paymentProto = proto.loadProto("payment.proto", "payment");
 
 const client = new paymentProto.PaymentService(

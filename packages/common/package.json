@@ -11,8 +11,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
+    "axios": "^1.20.0",
     "joi": "^18.2.3",
     "kafkajs": "^2.2.4",
+    "path": "^0.12.7",
     "uuid": "^14.0.1",
     "winston": "^3.19.0"
   }

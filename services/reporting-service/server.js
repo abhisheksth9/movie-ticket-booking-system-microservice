@@ -19,7 +19,7 @@ const startServer = async () => {
       console.log(`Reporting Service running on port ${PORT}`);
     });
   } catch (err) {
-    console.error('Reporting Service failed to start:', err.message);
+    console.error('Reporting Service failed to start:', err);
     process.exit(1);
   }
 };

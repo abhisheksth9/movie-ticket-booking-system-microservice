@@ -1,6 +1,4 @@
-const grpc = require("@grpc/grpc-js");
-const { proto } = require("@movie/common");
-
+const { proto, grpc } = require("@movie/common");
 const catalogProto = proto.loadProto("catalog.proto", "catalog");
 
 const client = new catalogProto.CatalogService(
