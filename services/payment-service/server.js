@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const app = require("./src/app");
 const sequelize = require("./config/sequelize");
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const { startGrpcServer } = require("./src/grpc/server")
 

@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
 const authClient = require("../utils/authClient");
 
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 const { AppError } = require("@movie/common").errors;
 const { errorMessages } = require("@movie/common").constants;
 const { sendNotification } = require("@movie/common").utils;

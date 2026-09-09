@@ -3,7 +3,7 @@ const { Movie } = require("../../models");
 
 const { errorMessages } = require("@movie/common").constants;
 const { AppError } = require("@movie/common").errors;
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 const { sendNotification } = require("@movie/common").utils;
 
 

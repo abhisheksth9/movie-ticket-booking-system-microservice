@@ -1,6 +1,6 @@
 const redisClient = require("../config/redisClient");
 const { AppError } = require("@movie/common").errors;
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const INCREMENT_SCRIPT = `
 local current = redis.call("INCR", KEYS[1])

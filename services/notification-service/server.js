@@ -3,7 +3,7 @@ require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
 
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const app = require("./src/app");
 const { initSocket } = require("./src/sockets");

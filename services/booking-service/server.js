@@ -3,7 +3,7 @@ require("dotenv").config();
 const app = require("./src/app");
 const sequelize = require("./config/sequelize");
 
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const PORT = process.env.PORT || 4002;
 

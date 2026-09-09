@@ -3,7 +3,7 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
 const { Showtime, Seat } = require('../../models');
-const { logger } = require('@movie/common').logger;
+const { logger } = require('@movie/common');
 const { proto } = require("@movie/common")
 
 const catalogProto = proto.loadProto("catalog.proto", "catalog");

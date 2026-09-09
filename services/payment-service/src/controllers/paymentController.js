@@ -1,5 +1,5 @@
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 const { publishPaymentEvent } = require("../kafka/producer");
 
 const charge = async (req, res) => {

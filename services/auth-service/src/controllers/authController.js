@@ -7,7 +7,7 @@ const { logAudit } = require('../services/auditService');
 const { sendNotification } = require("@movie/common").utils;
 const { AppError } = require("@movie/common").errors;
 const { errorMessages } = require("@movie/common").constants;
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const register = async (req, role) => {
     const { name, email, password } = req.body;

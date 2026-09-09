@@ -5,7 +5,7 @@ const paymentClient = require("../grpc/paymentgrpcClient")
 
 const { errorMessages } = require("@movie/common").constants;
 const { AppError } = require("@movie/common").errors;
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const { publishBookingEvent } = require("../kafka/producer");
 

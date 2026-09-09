@@ -1,5 +1,5 @@
 const { kafka } = require('@movie/common').kafka;
-const { logger } = require('@movie/common').logger;
+const { logger } = require('@movie/common');
 const { createNotification } = require('../services/notificationService');
 
 const consumer = kafka.consumer({ groupId: 'notification-group'});

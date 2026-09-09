@@ -13,7 +13,7 @@ module.exports = {
       theaterId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'Theaters', key: 'id' },
+        references: { model: 'theaters', key: 'id' },
         onDelete: 'CASCADE',
       },
       seatNumber: {

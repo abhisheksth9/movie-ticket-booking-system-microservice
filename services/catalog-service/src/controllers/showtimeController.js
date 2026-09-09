@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const { Showtime, Movie, Theater } = require('../../models');
 
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 const { AppError } = require('@movie/common').errors;
 const { errorMessages } = require('@movie/common').constants;
 

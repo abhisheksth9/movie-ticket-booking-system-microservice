@@ -5,7 +5,7 @@ const createServiceProxy = require("./config/createServiceProxy");
 const { notFound, errorHandler } = require("@movie/common").middleware;
 const { authenticate } = require("../src/middleware/authMiddleware")
 
-const { requestId, requestLogger, responseLogger } = require("@movie/common").logger;
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 const { generalRateLimiter, authRateLimiter } = require("./middleware/rateLimiter");
 
 const app = express();

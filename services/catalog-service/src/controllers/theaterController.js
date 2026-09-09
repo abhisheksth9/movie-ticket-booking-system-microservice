@@ -4,7 +4,7 @@ const { AppError } = require('@movie/common').errors;
 const { errorMessages } = require('@movie/common').constants;
 const { Theater, Seat } = require('../../models');
 
-const { logger } = require("@movie/common").logger;
+const { logger } = require("@movie/common");
 
 const getAllTheaters = async (req, res) => {
     const theaters = await Theater.findAll();
