@@ -4,7 +4,7 @@ const router = express.Router();
 const { protect, adminOnly, internalApiMiddleware } = require("@movie/common").middleware;
 const { registerUser, loginUser, logout,
         registerAdmin, loginAdmin, refreshToken, 
-        getUser, getAllUsers, deleteUser, 
+        getUser, getAllUsers, deleteUser, getMe, 
 } = require("../controllers/authController");
 
 const { validate } = require("@movie/common").validators;
@@ -23,6 +23,7 @@ router.post("/logout", logout);
 router.post("/admin/register",validate({body: registerSchema}), registerAdmin);
 router.post("/admin/login", validate({body: loginSchema}), loginAdmin);
 
+router.get("/me", protect, getMe);
 router.get("/users", validate({ query: listUserQuerySchema }), protect, adminOnly, getAllUsers);
 router.delete("/del/:id", validate({ params: userIdParamSchema }), protect, adminOnly, deleteUser);
 

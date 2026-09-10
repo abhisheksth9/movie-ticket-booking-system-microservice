@@ -44,60 +44,28 @@ const register = async (req, role) => {
     return { user, tokens };
 };
 
-// const login = async (req, role) => {
-//     const { email, password } = req.body;
-
-//     const user = await User.findOne({
-//         where: { email, role },
-//     });
-
-//     if (!user) {
-//         logger.warn("Login attempt for non-existing user", { email, role })
-//         throw new AppError(errorMessages.USER.NOT_FOUND, 404)
-//     }
-
-//     const isMatch = await bcrypt.compare(password, user.password);
-
-//     if (!isMatch) {
-//         logger.warn("Invalid login attempt", { email, role})
-
-//         throw new AppError(errorMessages.USER.INVALID_CREDENTIALS, 401);
-//     }
-
-//     logger.info("User logged in", { userId: user.id, email, role })
-//     await logAudit(user.id, 'LOGIN');
-//     const tokens = generateTokens(user);
-//     return { user, tokens };
-// };
-
-
 const login = async (req, role) => {
     const { email, password } = req.body;
 
-    console.time("db-find-user");
-    const user = await User.findOne({ where: { email, role } });
-    console.timeEnd("db-find-user");
+    const user = await User.findOne({
+        where: { email, role },
+    });
 
-    if (!user) { 
+    if (!user) {
         logger.warn("Login attempt for non-existing user", { email, role })
-         throw new AppError(errorMessages.USER.NOT_FOUND, 404)
-     }
+        throw new AppError(errorMessages.USER.NOT_FOUND, 404)
+    }
 
-    console.time("bcrypt-compare");
     const isMatch = await bcrypt.compare(password, user.password);
-    console.timeEnd("bcrypt-compare");
 
-    if (!isMatch) { 
+    if (!isMatch) {
         logger.warn("Invalid login attempt", { email, role})
+
         throw new AppError(errorMessages.USER.INVALID_CREDENTIALS, 401);
-     }
+    }
 
-    logger.info("User logged in", { userId: user.id, email, role });
-
-    console.time("audit-log");
+    logger.info("User logged in", { userId: user.id, email, role })
     await logAudit(user.id, 'LOGIN');
-    console.timeEnd("audit-log");
-
     const tokens = generateTokens(user);
     return { user, tokens };
 };
@@ -143,40 +111,14 @@ const registerAdmin = async (req, res) => {
     });
 };
 
-// const loginUser = async (req, res) => {
-//     const { user, tokens } = await login(req, "user");
-//     await sendNotification({
-//         recipientId: user.id,
-//         recipientRole: "user",
-//         type: "USER_LOGIN",
-//         message: `${user.name} logged in successfully.`,
-//     });
-
-//     setRefreshTokenCookie(res, tokens.refreshToken);
-
-//     res.status(200).json({
-//         id: user.id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//         accessToken: tokens.accessToken,
-//     });
-// };
-
 const loginUser = async (req, res) => {
-    console.time("login-total");
-    console.time("login-query");
     const { user, tokens } = await login(req, "user");
-    console.timeEnd("login-query");
-
-    console.time("notification");
     await sendNotification({
         recipientId: user.id,
         recipientRole: "user",
         type: "USER_LOGIN",
         message: `${user.name} logged in successfully.`,
     });
-    console.timeEnd("notification");
 
     setRefreshTokenCookie(res, tokens.refreshToken);
 
@@ -187,8 +129,8 @@ const loginUser = async (req, res) => {
         role: user.role,
         accessToken: tokens.accessToken,
     });
-    console.timeEnd("login-total");
 };
+
 
 const loginAdmin = async (req, res) => {
     const { user, tokens } = await login(req, "admin");
@@ -295,4 +237,23 @@ const logout = async (req, res) => {
     res.status(200).json({message: "Logged out successfully"})
 }
 
-module.exports = { registerUser, registerAdmin, loginUser, loginAdmin, refreshToken, getUser, getAllUsers, deleteUser, logout };
+const getMe = async (req, res) => {
+    const userId = req.headers["x-user-id"];
+
+    const user = await User.findByPk(userId, {
+        attributes: ["id", "name", "email", "role"],
+    });
+
+    if (!user) {
+        logger.warn("getMe called for non-existent user", {userId});
+        throw new AppError(errorMessages.USER.NOT_FOUND, 404);
+    }
+    res.status(200).json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+    })    
+}
+
+module.exports = { registerUser, registerAdmin, loginUser, loginAdmin, refreshToken, getUser, getAllUsers, deleteUser, logout, getMe };
