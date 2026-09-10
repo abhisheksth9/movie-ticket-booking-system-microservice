@@ -57,7 +57,6 @@ function connectSocket() {
     });
 
     socket.on("notification", (notification) => {
-        console.log("========== NOTIFICATION ==========");
         console.log(notification);
         appendNotification(notification);
     });

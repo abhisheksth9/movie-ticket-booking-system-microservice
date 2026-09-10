@@ -1,21 +1,21 @@
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
-const { logger } = require("@movie/common");
-const { proto, grpc } = require("@movie/common");
+const { proto, grpc, logger } = require("@movie/common");
 
 const paymentProto = proto.loadProto("payment.proto", "payment");
 const { publishPaymentEvent } = require("../kafka/producer");
 
 async function chargeUser(call, callback) {
+    const requestId = call.metadata.get('x-request-id')[0];
     const { userId, bookingId, amount, description } = call.request;
     const transaction = await sequelize.transaction();
-
+    
     try {
         const wallet = await Wallet.findOne({
             where: { userId },
             transaction,
             lock: transaction.LOCK.UPDATE,
         });
-
+        
         if (!wallet){
             await transaction.rollback();
             return callback(null, {
@@ -26,11 +26,11 @@ async function chargeUser(call, callback) {
                 message: "Wallet Not Found",
             });
         }
-
+        
         const balanceBefore = Number(wallet.balance);
         wallet.balance = balanceBefore - amount;
         await wallet.save({ transaction });
-
+        
         const walletTransaction = await WalletTransaction.create({
             userId,
             walletId: wallet.id,
@@ -41,10 +41,11 @@ async function chargeUser(call, callback) {
             reference: bookingId,
             description,
         }, {transaction});
-
+        
         await transaction.commit();
-
+        
         logger.info("Payment Successful", {
+            requestId,
             userId, 
             bookingId, 
             transactionId: walletTransaction.id,
@@ -52,14 +53,14 @@ async function chargeUser(call, callback) {
             balanceAfter: wallet.balance
         });
         
-        try{
-            await publishPaymentEvent('payment.charged', {
-                userId, bookingId, amount, balanceAfter: wallet.balance,
-            });
-        } catch (err){
-            logger.error(`[Payment Service] Failed to publish payment.charged event: ${err.message}`)
+        try {
+            await publishPaymentEvent('payment.charged', { 
+                userId, bookingId, amount, balanceAfter: wallet.balance 
+            }, requestId);
+        } catch (err) {
+            logger.error(`[Payment Service] Failed to publish payment.charged event: ${err.message}`, { requestId });
         }
-
+       
         callback(null, {
             success: true,
             transactionId: walletTransaction.id,
@@ -69,15 +70,13 @@ async function chargeUser(call, callback) {
         });
     } catch (err) {
         await transaction.rollback();
-
-        callback({
-            code: grpc.status.INTERNAL,
-            message: err.message,
-        });
+        logger.error("Payment failed", { requestId, userId, bookingId, error: err.message });
+        callback({ code: grpc.status.INTERNAL, message: err.message, });
     }
 }
 
 async function refundUser(call, callback) {
+    const requestId = call.metadata.get('x-request-id')[0];
     const { userId, bookingId, amount, description } = call.request;
     const transaction = await sequelize.transaction();
     
@@ -117,6 +116,7 @@ async function refundUser(call, callback) {
         await transaction.commit();
 
         logger.info("Refund Successful", {
+            requestId,
             userId, 
             bookingId, 
             transactionId: walletTransaction.id,
@@ -127,9 +127,9 @@ async function refundUser(call, callback) {
         try {
             await publishPaymentEvent('payment.refunded', {
                 userId, bookingId, amount, balanceAfter: wallet.balance,
-            });
+            }, requestId);
         } catch (err) {
-            logger.error(`[Payment Service] Failed to publish payment.refunded event: ${err.message}`);
+            logger.error(`[Payment Service] Failed to publish payment.refunded event: ${err.message}`, { requestId });
         }
         
         callback(null, {
@@ -141,7 +141,7 @@ async function refundUser(call, callback) {
         });
     } catch (err) {
         await transaction.rollback();
-
+        logger.error("Refund failed", { requestId, userId, bookingId, error: err.message });
         callback({
             code: grpc.status.INTERNAL,
             message: err.message,
@@ -151,13 +151,9 @@ async function refundUser(call, callback) {
 
 function startGrpcServer() {
     const server = new grpc.Server();
-
-    server.addService(paymentProto.PaymentService.service, {
-        chargeUser,
-        refundUser
-    });
-
+    server.addService(paymentProto.PaymentService.service, { chargeUser, refundUser });
     const port = process.env.PAYMENT_GRPC_PORT || 50054;
+    
     server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), () => {
         logger.info(`[Payment Service] gRPC server listening on port ${port}`);
     });

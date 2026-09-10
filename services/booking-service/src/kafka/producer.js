@@ -12,17 +12,18 @@ async function connectProducer() {
     }
 }
 
-async function publishBookingEvent(type, payload) {
+async function publishBookingEvent(type, payload, requestId) {
     try {
         await connectProducer();
         await producer.send({
             topic: 'booking-events',
             messages: [{
                 value: JSON.stringify({type, ...payload, timestamp: new Date().toISOString() }),
+                headers: requestId ? { 'x-request-id': requestId } : undefined,
             }],
         });
     } catch (err) {
-        logger.error(`[Booking Service] failed to publish ${type} event: ${err.message}`)
+        logger.error(`[Booking Service] failed to publish ${type} event: ${err.message}`, {requestId})
     }
 }
 

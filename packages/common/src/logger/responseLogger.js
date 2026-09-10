@@ -11,6 +11,8 @@ const responseLogger = (req, res, next) => {
 
         logger.info("Incoming Response", {
             requestId: req.requestId,
+            userId: req.user?.id,
+            role: req.user?.role,
             method: req.method,
             url: req.originalUrl,
             statusCode: res.statusCode,

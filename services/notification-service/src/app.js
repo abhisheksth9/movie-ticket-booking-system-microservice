@@ -2,13 +2,9 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 require("dotenv").config();
-
 const notificationRoutes = require("./routes/notificationRoute");
-
-const {
-    notFound,
-    errorHandler,
-} = require("./middleware/errorHandler");
+const { notFound,errorHandler} = require("./middleware/errorHandler");
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 
 const app = express();
 
@@ -17,6 +13,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use(requestId);
+app.use(requestLogger);
+app.use(responseLogger);
 
 app.use(express.static(path.join(__dirname, "../public")));
 app.use((req, res, next) => {

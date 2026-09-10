@@ -1,4 +1,6 @@
 const cron = require('node-cron');
+const { v4: uuid } = require('uuid');
+const { logger } = require('@movie/common');
 const { generateDailyReport } = require('../services/reportGenerator');
 
 const getYesterdayDateString = () => {
@@ -7,13 +9,14 @@ const getYesterdayDateString = () => {
     return d.toISOString().split('T')[0];
 };
 
-    cron.schedule('15 06 * * *', async() => {
+cron.schedule('15 06 * * *', async () => {
     const date = getYesterdayDateString();
+    const requestId = uuid();
     try {
-        await generateDailyReport(date);
-        console.log(`Daily report generated for ${date}`);
+        await generateDailyReport(date, requestId);
+        logger.info(`Daily report generated for ${date}`, { requestId, date });
     } catch (err) {
-        console.error(`Daily report generation failed for ${date}: `, err.message);
+        logger.error(`Daily report generation failed for ${date}`, { requestId, date, error: err.message });
     }
 }, {
     timezone: 'UTC'

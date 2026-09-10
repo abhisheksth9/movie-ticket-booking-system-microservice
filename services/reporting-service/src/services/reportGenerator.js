@@ -1,29 +1,31 @@
 const axios = require('axios');
+const { logger } = require('@movie/common');
 const { DailyReport } = require('../../models');
 const { buildReportPdf } = require('./reportPdfBuilder');
 const { uploadReportPdf } = require('./reportFileUploader');
 
-const internalHeaders = { 'x-internal-api-key': process.env.INTERNAL_API_KEY };
-
-const fetchStats = async (baseUrl, date) => {
+const fetchStats = async (baseUrl, date, requestId) => {
   try {
     const { data } = await axios.get(`${baseUrl}/internal/reports/daily-stats`, {
-      params: { date }, 
-      headers: internalHeaders,
+      params: { date },
+      headers: {
+        'x-internal-api-key': process.env.INTERNAL_API_KEY,
+        'x-request-id': requestId,
+      },
       timeout: 5000
     });
     return data;
   } catch (err) {
-    console.error(`Failed to fetch stats from ${baseUrl}:`, err.message);
+    logger.error(`Failed to fetch stats from ${baseUrl}`, { requestId, date, error: err.message });
     return {};
   }
 };
 
-const generateDailyReport = async (date) => {
+const generateDailyReport = async (date, requestId) => {
   const [auth, booking, payment] = await Promise.all([
-    fetchStats(process.env.AUTH_SERVICE_URL, date),
-    fetchStats(process.env.BOOKING_SERVICE_URL, date),
-    fetchStats(process.env.PAYMENT_SERVICE_URL, date)
+    fetchStats(process.env.AUTH_SERVICE_URL, date, requestId),
+    fetchStats(process.env.BOOKING_SERVICE_URL, date, requestId),
+    fetchStats(process.env.PAYMENT_SERVICE_URL, date, requestId)
   ]);
 
   const payload = {
@@ -43,15 +45,15 @@ const generateDailyReport = async (date) => {
   };
 
   const [report] = await DailyReport.upsert(payload, { returning: true });
-  
-  try{
+
+  try {
     const pdfBuffer = await buildReportPdf(report);
     const fileKey = await uploadReportPdf(date, pdfBuffer);
     await report.update({ reportFileKey: fileKey });
   } catch (err) {
-    console.error(`PDF export failed for ${date}:`, err.message);
+    logger.error(`PDF export failed for ${date}`, { requestId, date, error: err.message });
   }
-  
+
   return report;
 };
 

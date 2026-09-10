@@ -1,19 +1,19 @@
-const path = require('path');
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-
 const { Showtime, Seat } = require('../../models');
-const { logger } = require('@movie/common');
-const { proto } = require("@movie/common")
+const { logger, proto, grpc } = require('@movie/common');
 
 const catalogProto = proto.loadProto("catalog.proto", "catalog");
 
 async function getShowtime(call, callback) {
+  const requestId = call.metadata.get('x-request-id')[0];
   try {
     const { showtimeId } = call.request;
+    
+    logger.info('gRPC getShowtime called', { requestId, showtimeId });
+
     const showtime = await Showtime.findByPk(showtimeId);
 
     if (!showtime) {
+      logger.warn('Showtime not found', { requestId, showtimeId });
       return callback({ code: grpc.status.NOT_FOUND, message: 'Showtime not found' });
     }
 
@@ -26,6 +26,7 @@ async function getShowtime(call, callback) {
       price: String(showtime.price),
     });
   } catch (err) {
+    logger.error('gRPC getShowtime failed', { requestId, error: err.message });
     callback({ code: grpc.status.INTERNAL, message: err.message });
   }
 }

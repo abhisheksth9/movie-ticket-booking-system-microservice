@@ -4,8 +4,8 @@ const cors = require("cors");
 const movieRoutes = require("./routes/movieRoutes");
 const showtimeRoutes = require("./routes/showtimeRoutes");
 const theaterRoutes = require("./routes/theaterRoutes");
-
 const { notFound, errorHandler } = require("@movie/common").middleware;
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 
 const app = express();
 
@@ -14,6 +14,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use(requestId);
+app.use(requestLogger);
+app.use(responseLogger);
 
 app.use("/api/catalog/movies", movieRoutes);
 app.use("/api/catalog/showtimes", showtimeRoutes);

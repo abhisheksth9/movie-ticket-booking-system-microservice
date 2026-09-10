@@ -33,7 +33,7 @@ const listReports = async (req, res, next ) => {
 const regenerateReport = async ( req, res, next ) => {
     try {
         const { date } = req.params;
-        const report = await generateDailyReport(date);
+        const report = await generateDailyReport(date, req.requestId);
         res.status(200).json(report);
     } catch (err) {
         next(err);

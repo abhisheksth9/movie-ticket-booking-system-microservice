@@ -6,6 +6,7 @@ const walletRoutes = require("./routes/walletRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 
 const { notFound, errorHandler } = require("@movie/common").middleware;
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 
 const app = express();
 
@@ -14,6 +15,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use(requestId);
+app.use(requestLogger);
+app.use(responseLogger);
 
 app.use("/api/payments", paymentRoutes);
 app.use("/api/payments", walletRoutes);

@@ -12,17 +12,18 @@ async function connectProducer() {
     }
 }
 
-async function publishPaymentEvent(type, payload) {
+async function publishPaymentEvent(type, payload, requestId) {
     try{
         await connectProducer();
         await producer.send({
             topic: 'payment-events',
             messages: [{
                 value: JSON.stringify({ type, ...payload, timestamp: new Date().toISOString() }),
+                headers: requestId ? { 'x-request-id': requestId } : undefined,
             }],
         });
     } catch (err) {
-        logger.error(`[Payment Service] Failed to publish ${type} event: ${err.message}`);
+        logger.error(`[Payment Service] Failed to publish ${type} event: ${err.message}`, { requestId });
     }
 }
 

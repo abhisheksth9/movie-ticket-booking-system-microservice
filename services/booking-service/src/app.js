@@ -4,6 +4,7 @@ const cors = require("cors");
 const bookingRoutes = require("./routes/bookingRoutes");
 const reportRoutes = require("../src/routes/reportRoutes");
 const { notFound, errorHandler } = require("@movie/common").middleware;
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 
 const app = express();
 
@@ -12,6 +13,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use(requestId);
+app.use(requestLogger);
+app.use(responseLogger);
 
 app.use("/api/bookings", bookingRoutes);
 app.use('/internal/reports', reportRoutes);

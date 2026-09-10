@@ -44,28 +44,31 @@ async function startKafkaConsumer() {
     
     await consumer.run({
         eachMessage: async({ topic, message }) => {
+            const requestId = message.headers?.['x-request-id']?.toString();
+
             let event;
             try {
                 event = JSON.parse(message.value.toString());
             } catch(err) {
-                logger.error(`[Notification Service] Failed to parse Kafka message on ${topic}: ${err.message}`);
+                logger.error(`[Notification Service] Failed to parse Kafka message on ${topic}: ${err.message}`, { requestId });
                 return;
             }
 
             const buildNotification = EVENT_HANDLERS[event.type];
             if(!buildNotification) {
-                logger.warn(`[Notification Service] No handler for event type "${event.type}" on ${topic}`);
+                logger.warn(`[Notification Service] No handler for event type "${event.type}" on ${topic}`, { requestId });
                 return;
             }
 
             try {
                 await createNotification(buildNotification(event));
                 logger.info(`[Notification Service] Processed ${event.type}`, {
+                    requestId,
                     bookingId: event.bookingId,
                     userId: event.userId,
                 });
             } catch (err) {
-                logger.error(`[Notification Service] Failed to process ${event.type}: ${err.message}`);
+                logger.error(`[Notification Service] Failed to process ${event.type}: ${err.message}`, { requestId });
             }
         },
     })

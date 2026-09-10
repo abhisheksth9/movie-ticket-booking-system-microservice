@@ -6,9 +6,17 @@ const client = new catalogProto.CatalogService(
   grpc.credentials.createInsecure()
 );
 
-function getShowtime(showtimeId) {
+function buildMetadata(requestId) {
+  const metadata = new grpc.Metadata();
+  if (requestId) {
+    metadata.set('x-request-id', requestId);
+  }
+  return metadata;
+}
+
+function getShowtime(showtimeId, requestId) {
   return new Promise((resolve, reject) => {
-    client.getShowtime({ showtimeId }, (err, response) => {
+    client.getShowtime({ showtimeId }, buildMetadata(requestId), (err, response) => {
       if (err) {
         if (err.code === grpc.status.NOT_FOUND) return resolve(null);
         return reject(err);
@@ -18,9 +26,9 @@ function getShowtime(showtimeId) {
   });
 }
 
-function getTheaterSeats(theaterId) {
+function getTheaterSeats(theaterId, requestId) {
   return new Promise((resolve, reject) => {
-    client.getTheaterSeats({ theaterId }, (err, response) => {
+    client.getTheaterSeats({ theaterId }, buildMetadata(requestId), (err, response) => {
       if (err) return reject(err);
       resolve(response.seats);
     });

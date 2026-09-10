@@ -1,13 +1,14 @@
 const { WalletTransaction } = require('../../models');
 const { Op, fn, col } = require('sequelize');
+const { logger } = require('@movie/common');
 
-const getTypeSummary = async (type, dateRange ) => {
+const getTypeSummary = async (type, dateRange) => {
     const result = await WalletTransaction.findOne({
         attributes: [
             [fn('COUNT', col('id')), 'count'],
             [fn('SUM', col('amount')), 'total']
         ],
-        where: { type, createdAt: dateRange},
+        where: { type, createdAt: dateRange },
         raw: true
     });
 
@@ -18,11 +19,11 @@ const getTypeSummary = async (type, dateRange ) => {
 };
 
 const getDailyStats = async (req, res, next) => {
-    try{
+    try {
         const { date } = req.query;
-        
+
         if (!date) {
-            return res.status(400).json({ message: 'date query param is required'});
+            return res.status(400).json({ message: 'date query param is required' });
         }
 
         const startOfDay = new Date(`${date}T00:00:00.000Z`);
@@ -35,6 +36,14 @@ const getDailyStats = async (req, res, next) => {
             getTypeSummary('topup', dateRange)
         ]);
 
+        logger.info('Daily stats fetched', {
+            requestId: req.requestId,
+            date,
+            paymentsProcessed: charges.count,
+            refundsIssued: refunds.count,
+            walletTopups: topups.count,
+        });
+
         res.status(200).json({
             date,
             paymentsProcessed: charges.count,
@@ -45,6 +54,7 @@ const getDailyStats = async (req, res, next) => {
             totalTopupAmount: topups.total
         });
     } catch (err) {
+        logger.error('Daily stats fetch failed', { requestId: req.requestId, error: err.message });
         next(err);
     }
 };

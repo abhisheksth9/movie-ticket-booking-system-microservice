@@ -4,11 +4,16 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const { notFound, errorHandler } = require("@movie/common").middleware;
+const { requestId, requestLogger, responseLogger } = require("@movie/common");
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+app.use(requestId);
+app.use(requestLogger);
+app.use(responseLogger);
 
 app.use(cors({
     origin: process.env.CLIENT_ORIGIN,  
