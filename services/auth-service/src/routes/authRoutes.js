@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { protect, adminOnly, internalApiMiddleware } = require("@movie/common").middleware;
-const { registerUser, loginUser, 
+const { registerUser, loginUser, logout,
         registerAdmin, loginAdmin, refreshToken, 
         getUser, getAllUsers, deleteUser, 
 } = require("../controllers/authController");
@@ -13,12 +13,12 @@ const {
     loginSchema,
     listUserQuerySchema,
     userIdParamSchema,
-    refreshTokenSchema,
 } = require("@movie/common").validators;
 
 router.post("/register", validate({body: registerSchema}),registerUser);
 router.post("/login",validate({body: loginSchema}), loginUser);
-router.post("/refresh", validate({body: refreshTokenSchema}), refreshToken);
+router.post("/refresh", refreshToken);
+router.post("/logout", logout);
 
 router.post("/admin/register",validate({body: registerSchema}), registerAdmin);
 router.post("/admin/login", validate({body: loginSchema}), loginAdmin);

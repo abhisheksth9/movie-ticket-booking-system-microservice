@@ -9,6 +9,15 @@ const { AppError } = require("@movie/common").errors;
 const { errorMessages } = require("@movie/common").constants;
 const { logger } = require("@movie/common");
 
+const setRefreshTokenCookie = (res, refreshToken) => {
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+};
+
 const register = async (req, role) => {
     const { name, email, password } = req.body;
     
@@ -35,28 +44,60 @@ const register = async (req, role) => {
     return { user, tokens };
 };
 
+// const login = async (req, role) => {
+//     const { email, password } = req.body;
+
+//     const user = await User.findOne({
+//         where: { email, role },
+//     });
+
+//     if (!user) {
+//         logger.warn("Login attempt for non-existing user", { email, role })
+//         throw new AppError(errorMessages.USER.NOT_FOUND, 404)
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) {
+//         logger.warn("Invalid login attempt", { email, role})
+
+//         throw new AppError(errorMessages.USER.INVALID_CREDENTIALS, 401);
+//     }
+
+//     logger.info("User logged in", { userId: user.id, email, role })
+//     await logAudit(user.id, 'LOGIN');
+//     const tokens = generateTokens(user);
+//     return { user, tokens };
+// };
+
+
 const login = async (req, role) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({
-        where: { email, role },
-    });
+    console.time("db-find-user");
+    const user = await User.findOne({ where: { email, role } });
+    console.timeEnd("db-find-user");
 
-    if (!user) {
+    if (!user) { 
         logger.warn("Login attempt for non-existing user", { email, role })
-        throw new AppError(errorMessages.USER.NOT_FOUND, 404)
-    }
+         throw new AppError(errorMessages.USER.NOT_FOUND, 404)
+     }
 
+    console.time("bcrypt-compare");
     const isMatch = await bcrypt.compare(password, user.password);
+    console.timeEnd("bcrypt-compare");
 
-    if (!isMatch) {
+    if (!isMatch) { 
         logger.warn("Invalid login attempt", { email, role})
-
         throw new AppError(errorMessages.USER.INVALID_CREDENTIALS, 401);
-    }
+     }
 
-    logger.info("User logged in", { userId: user.id, email, role })
+    logger.info("User logged in", { userId: user.id, email, role });
+
+    console.time("audit-log");
     await logAudit(user.id, 'LOGIN');
+    console.timeEnd("audit-log");
+
     const tokens = generateTokens(user);
     return { user, tokens };
 };
@@ -71,42 +112,73 @@ const registerUser = async (req, res) => {
         message: `Welcome ${user.name}!`,
     });
 
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
     res.status(201).json({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
     });
 };
 
 const registerAdmin = async (req, res) => {
     const { user, tokens } = await register(req, "admin");
+
     await sendNotification({
         recipientRole: "admin",
         type: "ADMIN_REGISTERED",
         message: `Admin ${user.name} registered successfully.`,
     });
 
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
     res.status(201).json({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
     });
 };
 
+// const loginUser = async (req, res) => {
+//     const { user, tokens } = await login(req, "user");
+//     await sendNotification({
+//         recipientId: user.id,
+//         recipientRole: "user",
+//         type: "USER_LOGIN",
+//         message: `${user.name} logged in successfully.`,
+//     });
+
+//     setRefreshTokenCookie(res, tokens.refreshToken);
+
+//     res.status(200).json({
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         role: user.role,
+//         accessToken: tokens.accessToken,
+//     });
+// };
+
 const loginUser = async (req, res) => {
+    console.time("login-total");
+    console.time("login-query");
     const { user, tokens } = await login(req, "user");
+    console.timeEnd("login-query");
+
+    console.time("notification");
     await sendNotification({
         recipientId: user.id,
         recipientRole: "user",
         type: "USER_LOGIN",
         message: `${user.name} logged in successfully.`,
     });
+    console.timeEnd("notification");
+
+    setRefreshTokenCookie(res, tokens.refreshToken);
 
     res.status(200).json({
         id: user.id,
@@ -114,30 +186,32 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
     });
+    console.timeEnd("login-total");
 };
 
 const loginAdmin = async (req, res) => {
     const { user, tokens } = await login(req, "admin");
+
     await sendNotification({
         recipientRole: "admin",
         type: "ADMIN_LOGIN",
         message: `Admin ${user.name} logged in.`,
     });
 
+    setRefreshTokenCookie(res, tokens.refreshToken);
+    
     res.status(200).json({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
     });
 };
 
 const refreshToken = async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
         throw new AppError(errorMessages.AUTH.REFRESH_TOKEN_REQUIRED, 400)
@@ -212,4 +286,13 @@ const deleteUser = async (req, res) => {
     res.status(200).json({ message: "User deleted successfully" });
 };
 
-module.exports = { registerUser, registerAdmin, loginUser, loginAdmin, refreshToken, getUser, getAllUsers, deleteUser };
+const logout = async (req, res) => {
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+    });
+    res.status(200).json({message: "Logged out successfully"})
+}
+
+module.exports = { registerUser, registerAdmin, loginUser, loginAdmin, refreshToken, getUser, getAllUsers, deleteUser, logout };

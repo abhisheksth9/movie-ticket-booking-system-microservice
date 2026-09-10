@@ -5,9 +5,11 @@ const authRoutes = require("./routes/authRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const { notFound, errorHandler } = require("@movie/common").middleware;
 const { requestId, requestLogger, responseLogger } = require("@movie/common");
+const cookieParser = require("cookie-parser")
 
 const app = express();
 
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
