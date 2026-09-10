@@ -2,35 +2,23 @@ const http = require("http");
 const https = require("https");
 const { URL } = require("url");
 
+const STRIP_RESPONSE_HEADERS = [
+    "access-control-allow-origin",
+    "access-control-allow-credentials",
+];
+
 const createServiceProxy = (target, basePath = "") => {
     const targetUrl = new URL(target);
-    const isHttps = targetUrl.protocol === "https:";
-    const client = isHttps ? https : http;
+    const client = targetUrl.protocol === "https:" ? https : http;
 
     return (req, res) => {
-        const outgoingPath = basePath + req.url;
+        const bodyData = req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : undefined;
 
-        let bodyData;
-        if (req.body && Object.keys(req.body).length) {
-            bodyData = JSON.stringify(req.body);
-        }
-
-        const headers = { ...req.headers };
-
-        headers["host"] = targetUrl.host;
-
-        const remoteAddress = req.socket.remoteAddress;
-        headers["x-forwarded-for"] = (headers["x-forwarded-for"]
-            ? headers["x-forwarded-for"] + ", "
-            : "") + remoteAddress;
-        headers["x-forwarded-port"] = req.socket.localPort;
-        headers["x-forwarded-proto"] = req.socket.encrypted ? "https" : "http";
-
+        const headers = { ...req.headers, host: targetUrl.host };
         if (req.user) {
             headers["x-user-id"] = req.user.id;
             headers["x-user-role"] = req.user.role;
         }
-
         headers["x-internal-api-key"] = process.env.INTERNAL_API_KEY;
 
         if (bodyData) {
@@ -38,32 +26,29 @@ const createServiceProxy = (target, basePath = "") => {
             headers["content-length"] = Buffer.byteLength(bodyData);
         }
 
-        const options = {
-            protocol: targetUrl.protocol,
-            hostname: targetUrl.hostname,
-            port: targetUrl.port || (isHttps ? 443 : 80),
-            path: outgoingPath,
-            method: req.method,
-            headers,
-        };
-
-        const proxyReq = client.request(options, (proxyRes) => {
-            res.writeHead(proxyRes.statusCode, proxyRes.headers);
-            proxyRes.pipe(res, { end: true });
-        });
-
-        proxyReq.on("error", (err) => {
-            if (!res.headersSent) {
-                res.writeHead(502, { "Content-Type": "application/json" });
+        const proxyReq = client.request({
+                hostname: targetUrl.hostname,
+                port: targetUrl.port || (client === https ? 443 : 80),
+                path: basePath + req.url,
+                method: req.method,
+                headers,
+            },
+            (proxyRes) => {
+                STRIP_RESPONSE_HEADERS.forEach((h) => delete proxyRes.headers[h]);
+                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                proxyRes.pipe(res);
             }
+        );
+
+        proxyReq.on("error", () => {
+            if (!res.headersSent) res.writeHead(502, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "Bad gateway" }));
         });
 
         if (bodyData) {
-            proxyReq.write(bodyData);
-            proxyReq.end();
+            proxyReq.end(bodyData);
         } else {
-            req.pipe(proxyReq, { end: true });
+            req.pipe(proxyReq);
         }
     };
 };

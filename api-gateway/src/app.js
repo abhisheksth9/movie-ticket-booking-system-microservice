@@ -9,7 +9,10 @@ const { requestId, requestLogger, responseLogger } = require("@movie/common");
 const { generalRateLimiter, authRateLimiter } = require("./middleware/rateLimiter");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+}));
 app.use(express.json());
 
 app.use(requestId);
