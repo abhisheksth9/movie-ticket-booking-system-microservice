@@ -191,6 +191,24 @@ const getMyBookings = async (req, res) => {
     res.status(200).json(bookings);
 };
 
+const getBookedSeatsForShowtime = async (req, res) => {
+    const { showtimeId } = req.params;
+
+    const bookings = await Booking.findAll({
+        where: {
+            showtimeId,
+            status: "confirmed",
+        },
+        include: [{ model: BookingSeat, attributes: ["seatId"] }],
+    });
+
+    const bookedSeatIds = bookings.flatMap((booking) =>
+        booking.BookingSeats.map((bs) => bs.seatId)
+    );
+
+    res.status(200).json({ bookedSeatIds });
+};
+
 const cancelBooking = async (req, res) => {
     const requestId = req.requestId;
     const booking = await Booking.findByPk(req.params.id);
@@ -294,4 +312,4 @@ const cancelBooking = async (req, res) => {
         remainingBalance: refund.balanceAfter,
     });
 };
-module.exports = { createBooking, getAllBookings, getMyBookings,cancelBooking };
+module.exports = { createBooking, getAllBookings, getMyBookings, getBookedSeatsForShowtime, cancelBooking };
