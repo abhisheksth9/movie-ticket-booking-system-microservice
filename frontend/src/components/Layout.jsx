@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
+import NotificationBell from "../features/notifications/components/NotificationBell";
 
 export default function Layout() {
   const { user, logout, isLoading } = useAuth();
@@ -26,6 +27,7 @@ export default function Layout() {
                     Admin
                   </Link>
                 )}
+                <NotificationBell />
                 <Link to="/profile" className="text-gray-600 hover:text-gray-900">
                   {user.name}
                 </Link>

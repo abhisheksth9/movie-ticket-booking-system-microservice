@@ -1,6 +1,7 @@
 const { AppError } = require("@movie/common").errors;
 const { errorMessages } = require("@movie/common").constants;
 const { createNotification } = require("../services/notificationService");
+const Notification = require("../models/Notification");
 
 const sendNotification = async (req, res) => {
     const { recipientId, recipientRole, type, message, data = {} } = req.body;
@@ -24,4 +25,31 @@ const sendNotification = async (req, res) => {
     }
 };
 
-module.exports = { sendNotification };
+const getMyNotifications = async (req, res) => {
+    const userId = req.headers["x-user-id"];
+
+    const notifications = await Notification.find({ recipientId: Number(userId) })
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+    res.status(200).json(notifications);
+};
+
+const markNotificationRead = async (req, res) => {
+    const userId = req.headers["x-user-id"];
+    const { id } = req.params;
+
+    const notification = await Notification.findOneAndUpdate(
+        { _id: id, recipientId: Number(userId) },
+        { isRead: true },
+        { new: true }
+    );
+
+    if (!notification) {
+        throw new AppError(errorMessages.NOTIFICATION.NOT_FOUND, 404);
+    }
+
+    res.status(200).json(notification);
+};
+
+module.exports = { sendNotification, getMyNotifications, markNotificationRead };
