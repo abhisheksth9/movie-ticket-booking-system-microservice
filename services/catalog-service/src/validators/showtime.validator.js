@@ -28,6 +28,10 @@ const showtimeIdParamSchema = Joi.object({
     id: id.required(),
 });
 
+const movieIdParamSchema = Joi.object({
+    movieId: id.required(),
+});
+
 const listShowtimesQuerySchema = Joi.object({
   movieId: id.optional(),
   theaterId: id.optional(),
@@ -37,4 +41,5 @@ module.exports = {
   createShowtimeSchema,
   showtimeIdParamSchema,
   listShowtimesQuerySchema,
+  movieIdParamSchema,
 };

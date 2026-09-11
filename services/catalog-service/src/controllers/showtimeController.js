@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const { Showtime, Movie, Theater } = require('../../models');
 
 const { logger } = require("@movie/common");
@@ -32,6 +32,20 @@ const getShowtimebyId = async (req, res) => {
 
     res.status(200).json(showtime);
 };
+
+const getShowtimebyMovie = async(req, res) => {
+    const showtimes = await Showtime.findAll({
+        where: { movieId: req.params.movieId },
+    });
+
+    logger.info("Showtimes fetched for movie", {
+        requestId: req.requestId,
+        movieId: req.params.movieId,
+        count: showtimes.length,
+    });
+    
+    res.status(200).json(showtimes);
+}
 
 const createShowtime = async (req, res) => {
     const { movieId, theaterId, startTime, endTime, price } = req.body;
@@ -90,4 +104,4 @@ const deleteShowtime = async (req, res) => {
     res.status(200).json({ message: 'Showtime deleted successfully' });
 };
 
-module.exports = { getAllShowtimes, getShowtimebyId, createShowtime, deleteShowtime };
+module.exports = { getAllShowtimes, getShowtimebyId, createShowtime, deleteShowtime, getShowtimebyMovie };
