@@ -1,5 +1,6 @@
 import { useAuth } from "../features/auth/AuthContext";
-import BookingHistory from "../features/bookings/components/useMyBookings";
+// import BookingHistory from "../features/bookings/components/BookingHistory";
+import WalletSummary from "../features/wallet/components/WalletSummary";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -19,8 +20,10 @@ export default function ProfilePage() {
         <p className="text-gray-900 font-medium capitalize">{user?.role}</p>
       </div>
 
-      <h2 className="text-lg font-medium text-gray-900 mb-3">Booking History</h2>
-      <BookingHistory />
+      <WalletSummary />
+
+      {/* <h2 className="text-lg font-medium text-gray-900 mb-3 mt-8">Booking History</h2> */}
+      {/* <BookingHistory /> */}
     </div>
   );
 }

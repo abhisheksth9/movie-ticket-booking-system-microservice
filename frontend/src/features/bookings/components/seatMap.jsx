@@ -27,7 +27,7 @@ export default function SeatMap({ theaterId, showtimeId, selectedSeatIds, onTogg
         {seats.map((seat) => {
           const isBooked = bookedSeatIds.includes(seat.id);
           const isSelected = selectedSeatIds.includes(seat.id);
-          const isVip = seat.type?.toLowerCase() === "vip";
+          // const isVip = seat.type?.toLowerCase() === "vip";
 
           return (
             <button
@@ -39,8 +39,6 @@ export default function SeatMap({ theaterId, showtimeId, selectedSeatIds, onTogg
                 isBooked
                   ? "bg-red-200 border-red-200 text-red-400 cursor-not-allowed"
                   : isSelected
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : isVip
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
                   : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
               }`}
@@ -55,13 +53,10 @@ export default function SeatMap({ theaterId, showtimeId, selectedSeatIds, onTogg
           <span className="w-3 h-3 rounded bg-gray-50 border border-gray-300 inline-block" /> Standard
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-amber-50 border border-amber-300 inline-block" /> VIP
-        </span>
-        <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-indigo-600 inline-block" /> Selected
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-gray-200 border border-gray-200 inline-block" /> Booked
+          <span className="w-3 h-3 rounded bg-red-200 border border-red-200 inline-block" /> Booked
         </span>
       </div>
     </div>
