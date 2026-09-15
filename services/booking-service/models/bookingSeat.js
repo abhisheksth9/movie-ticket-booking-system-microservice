@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     BookingSeat.init({
         bookingId: { type: DataTypes.INTEGER, allowNull: false },
         seatId:    { type: DataTypes.INTEGER, allowNull: false },
+        showtimeId: { type: DataTypes.INTEGER, allowNull: false },
     }, {
         sequelize,
         modelName: 'BookingSeat',
