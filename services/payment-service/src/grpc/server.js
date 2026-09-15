@@ -28,6 +28,20 @@ async function chargeUser(call, callback) {
         }
         
         const balanceBefore = Number(wallet.balance);
+        if (balanceBefore < Number(amount)) {
+            await transaction.rollback();
+            logger.warn("Payment failed: insufficient balance", {
+                requestId, userId, bookingId, amount, balanceBefore,
+                shortfall: Number((Number(amount) - balanceBefore).toFixed(2)),
+            });
+            return callback(null, {
+                success: false,
+                transactionId: 0,
+                amount,
+                balanceAfter: balanceBefore,
+                message: `Insufficient wallet balance. Available: Rs. ${balanceBefore}, Required: Rs. ${amount}`
+            });
+        }
         wallet.balance = balanceBefore - amount;
         await wallet.save({ transaction });
         
