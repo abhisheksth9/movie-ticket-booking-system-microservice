@@ -18,13 +18,31 @@ const getReportByDate = async (req, res, next) => {
     }
 }
 
-const listReports = async (req, res, next ) => {
+const listReports = async (req, res, next) => {
     try {
-        const { from, to } = req.query;
-        const where = from && to ? { date: { [Op.between]: [from, to] }} : {};
+        const { from, to, page = 1, limit = 10 } = req.query;
+        const where = from && to ? { date: { [Op.between]: [from, to] } } : {};
 
-        const reports = await DailyReport.findAll({ where, order: [['date', 'DESC']] });
-        res.status(200).json(reports);
+        const pageNum = Math.max(Number(page), 1);
+        const limitNum = Math.max(Number(limit), 1);
+        const offset = (pageNum - 1) * limitNum;
+
+        const { count, rows } = await DailyReport.findAndCountAll({
+            where,
+            order: [['date', 'DESC']],
+            limit: limitNum,
+            offset,
+        });
+
+        res.status(200).json({
+            reports: rows,
+            pagination: {
+                total: count,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(count / limitNum),
+            },
+        });
     } catch (err) {
         next(err);
     }
