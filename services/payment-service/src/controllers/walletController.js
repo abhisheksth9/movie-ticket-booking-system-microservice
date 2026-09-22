@@ -1,4 +1,3 @@
-const { Op } = require("sequelize");
 const { Wallet, WalletTransaction, sequelize } = require("../../models");
 const authClient = require("../utils/authClient");
 
@@ -102,12 +101,29 @@ const getBalance = async (req, res) => {
 };
 
 const getTransactionHistory = async (req, res) => {
-    const transactions = await WalletTransaction.findAll({
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNum = Math.max(Number(page), 1);
+    const limitNum = Math.max(Number(limit), 1);
+    const offset = (pageNum - 1) * limitNum;
+
+    const { count, rows } = await WalletTransaction.findAndCountAll({
         where: { userId: req.user.id },
         order: [["createdAt", "DESC"]],
-        attributes: [ "id", "type", "amount", "description", "balanceBefore", "balanceAfter", "bookingId", "createdAt" ],
+        attributes: ["id", "type", "amount", "description", "balanceBefore", "balanceAfter", "bookingId", "createdAt"],
+        limit: limitNum,
+        offset,
     });
-    res.status(200).json(transactions);
+
+    res.status(200).json({
+        transactions: rows,
+        pagination: {
+            total: count,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(count / limitNum),
+        },
+    });
 };
 
 module.exports = { topUpWallet, getBalance, getTransactionHistory };
