@@ -8,9 +8,10 @@ export function useWalletBalance() {
   });
 }
 
-export function useTransactions() {
+export function useTransactions(params) {
   return useQuery({
-    queryKey: ["wallet", "transactions"],
-    queryFn: fetchTransactions,
+    queryKey: ["wallet", "transactions", params],
+    queryFn: () => fetchTransactions(params),
+    keepPreviousData: true,
   });
 }

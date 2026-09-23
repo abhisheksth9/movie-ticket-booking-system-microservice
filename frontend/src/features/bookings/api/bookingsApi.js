@@ -24,7 +24,7 @@ export const fetchMyBookings = async () => {
   return data;
 };
 
-export const cancelBooking = async () => {
-  const { data } = await axiosClient.put("/api/bookings/${bookingId}/cancel");
+export const cancelBooking = async (bookingId) => {
+  const { data } = await axiosClient.put(`/api/bookings/${bookingId}/cancel`);
   return data;
 }

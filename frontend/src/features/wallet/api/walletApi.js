@@ -5,7 +5,9 @@ export const fetchWalletBalance = async () => {
   return data;
 };
 
-export const fetchTransactions = async () => {
-  const { data } = await axiosClient.get("/api/payments/transactions");
+export const fetchTransactions = async ({ page = 1, limit = 10 } = {}) => {
+  const { data } = await axiosClient.get("/api/payments/transactions", {
+    params: { page, limit },
+  });
   return data;
 };

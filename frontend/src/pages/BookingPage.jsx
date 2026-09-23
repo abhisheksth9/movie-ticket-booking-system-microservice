@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import { useShowtimeById } from "../features/showtimes/hooks/useShowtimes";
-import SeatMap from "../features/bookings/components/seatMap";
+import SeatMap from "../../src/features/bookings/components/seatMap"; 
 import { useCreateBooking } from "../features/bookings/hooks/useCreateBooking";
 
 export default function BookingPage() {
@@ -22,6 +22,11 @@ export default function BookingPage() {
   };
 
   const handleConfirm = async () => {
+    if (!user) {
+      setError("You must be logged in to complete a booking.");
+      return;
+    }
+
     setError("");
     try {
       const result = await createBooking.mutateAsync({
@@ -47,7 +52,6 @@ export default function BookingPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-1">Select Seats</h1>
       <p className="text-gray-500 text-sm mb-4">
         {new Date(showtime.startTime).toLocaleString()} — {showtime.price} per seat
       </p>
