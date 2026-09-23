@@ -26,6 +26,7 @@
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.2",
     "yamljs": "^0.3.0"
   }
 }
