@@ -40,8 +40,7 @@ async function getTheaterSeats(call, callback) {
       seats: seats.map((seat) => ({
         id: seat.id,
         theaterId: seat.theaterId,
-        seatNumber: seat.seatNumber,
-        type: seat.type.toUpperCase(), 
+        seatNumber: seat.seatNumber
       })),
     });
   } catch (err) {

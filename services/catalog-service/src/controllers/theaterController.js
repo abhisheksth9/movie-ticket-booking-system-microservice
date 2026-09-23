@@ -55,10 +55,7 @@ const createTheater = async (req, res) => {
             if (seats.length >= totalSeats) break;
             seats.push({
                 theaterId: theater.id,
-                seatNumber: `${row}${i}`,
-                type: i <= 2 ? 'vip'
-                    : i <= 4 ? 'premium'
-                    : 'standard',
+                seatNumber: `${row}${i}`
             });
         }
     }
