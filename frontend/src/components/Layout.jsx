@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import NotificationBell from "../features/notifications/components/NotificationBell";
-import WalletBadge from "../features/wallet/components/walletBadge";
+import WalletBadge from "../features/wallet/components/WalletBadge";
 
 export default function Layout() {
   const { user, logout, isLoading } = useAuth();
